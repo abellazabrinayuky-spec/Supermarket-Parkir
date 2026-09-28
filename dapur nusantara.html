@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dapur Nusantara SMAN 4 Sidoarjo - LKPD Berpikir Komputasional</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    /* Styling Peta Super Jernih (Bebas Blur / Watermark) */
+    #map {
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      background-color: #e5e7eb;
+    }
+
+    /* Memastikan gambar ubin peta jernih dan tajam */
+    .leaflet-tile-container img {
+      filter: none !important;
+      -webkit-filter: none !important;
+      opacity: 1 !important;
+    }
+
+    /* Leaflet Marker Styling */
+    .custom-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.35);
+      transition: all 0.2s ease;
+    }
+    
+    .courier-marker {
+      background: #059669;
+      color: white;
+      border: 3px solid white;
+      font-size: 16px;
+    }
+
+    .origin-marker {
+      background: #2563EB;
+      color: white;
+      border: 2px solid white;
+    }
+
+    .destination-marker {
+      background: #DC2626;
+      color: white;
+      border: 2px solid white;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased text-gray-800 h-screen flex flex-col overflow-hidden">
+
+  <!-- TOP HEADER / NAVBAR -->
+  <header class="bg-emerald-700 text-white px-6 py-3 shadow-md flex items-center justify-between z-30 shrink-0">
+    <div class="flex items-center space-x-3">
+      <div class="bg-white/10 p-2.5 rounded-2xl backdrop-blur-md">
+        <i class="fa-solid fa-utensils text-xl"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-lg leading-tight">Dapur Nusantara</h1>
+        <p class="text-xs text-emerald-200 flex items-center gap-1 font-medium">
+          <i class="fa-solid fa-school"></i> SMAN 4 Sidoarjo • Simulasi Aplikasi Delivery LKPD BK
+        </p>
+      </div>
+    </div>
+    
+    <div class="bg-emerald-800/80 px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-2 border border-emerald-600">
+      <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+      <span>Sistem Integrasi Berpikir Komputasional</span>
+    </div>
+  </header>
+
+  <!-- MAIN SPLIT CONTENT (2/3 LEFT SYSTEM, 1/3 RIGHT LKPD BK) -->
+  <div class="flex-1 flex overflow-hidden">
+
+    <!-- LEFT PANEL: ALUR SYSTEM PEMESANAN & SIMULASI (W-2/3) -->
+    <div class="w-full lg:w-2/3 flex flex-col h-full bg-white border-r border-gray-200 relative">
+
+      <!-- STEP TAB NAVIGATION -->
+      <nav class="bg-white border-b border-gray-200 flex justify-around text-xs font-medium text-gray-500 shrink-0 shadow-sm z-20">
+        <button id="stepBtn1" onclick="switchStep(1)" class="py-3 px-4 flex items-center gap-2 border-b-2 border-emerald-600 text-emerald-700 font-bold bg-emerald-50/50">
+          <span class="w-5 h-5 rounded-full bg-emerald-600 text-white text-[10px] flex items-center justify-center font-bold">1</span> Pilih Menu Makanan & Es
+        </button>
+        <button id="stepBtn2" onclick="switchStep(2)" class="py-3 px-4 flex items-center gap-2 border-b-2 border-transparent hover:text-gray-700">
+          <span class="w-5 h-5 rounded-full bg-gray-200 text-gray-600 text-[10px] flex items-center justify-center font-bold">2</span> Lokasi Peta & Rute
+        </button>
+        <button id="stepBtn3" onclick="switchStep(3)" class="py-3 px-4 flex items-center gap-2 border-b-2 border-transparent hover:text-gray-700">
+          <span class="w-5 h-5 rounded-full bg-gray-200 text-gray-600 text-[10px] flex items-center justify-center font-bold">3</span> Pembayaran & Checkout
+        </button>
+      </nav>
+
+      <!-- VIEW STEP 1: KATALOG MENU -->
+      <div id="viewStep1" class="flex-1 overflow-y-auto p-6 pb-24">
+        <div class="mb-4">
+          <h2 class="text-base font-bold text-gray-800">Menu Dapur Nusantara & Minuman Segar</h2>
+          <p class="text-xs text-gray-500">Silakan pilih makanan khas dan aneka hidangan es kreasimu.</p>
+        </div>
+
+        <!-- Makanan -->
+        <h3 class="text-xs font-bold uppercase tracking-wider text-emerald-700 mb-2 flex items-center gap-1.5">
+          <i class="fa-solid fa-bowl-rice"></i> Makanan Utama
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6" id="makananMenuList">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Minuman Per-Es-an -->
+        <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-700 mb-2 flex items-center gap-1.5">
+          <i class="fa-solid fa-ice-cream"></i> Aneka Es Segar Nusantara
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6" id="esMenuList">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- FIXED FOOTER STEP 1 -->
+        <div class="absolute bottom-0 left-0 right-0 bg-white border-t p-4 shadow-lg z-30 flex items-center justify-between">
+          <div>
+            <div class="text-[11px] text-gray-400 font-medium">Subtotal Pesanan:</div>
+            <div id="cartTotalPrice" class="text-lg font-extrabold text-emerald-600">Rp 0</div>
+          </div>
+          <button onclick="switchStep(2)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-md text-xs flex items-center gap-2 transition">
+            <span>Lanjut Pilih Lokasi Tujuan</span>
+            <i class="fa-solid fa-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW STEP 2: LOKASI PETA & RUTE REAL -->
+      <div id="viewStep2" class="flex-1 relative hidden h-full">
+        <!-- PETA LEAFLET JERNIH -->
+        <div id="map"></div>
+
+        <!-- TOP PANEL: PENCARIAN ALAMAT & PRESET -->
+        <div class="absolute top-3 left-3 right-3 z-10 max-w-xl mx-auto space-y-2">
+          
+          <!-- SEARCH BOX ALAMAT DETAIL -->
+          <div class="bg-white/95 backdrop-blur-md p-2 rounded-2xl shadow-lg border border-gray-100 flex items-center gap-2">
+            <div class="pl-2 text-emerald-600"><i class="fa-solid fa-magnifying-glass"></i></div>
+            <input type="text" id="addressSearchInput" placeholder="Ketik alamat detail (Contoh: Jl. Pahlawan No 12 Sidoarjo)..." class="w-full text-xs bg-transparent border-none focus:outline-none text-gray-800 placeholder-gray-400">
+            <button onclick="searchAddress()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition shrink-0">
+              Cari Alamat
+            </button>
+          </div>
+
+          <!-- PRESET BANTUAN CEPAT -->
+          <div class="bg-white/90 backdrop-blur-md p-2.5 rounded-2xl shadow border border-gray-100">
+            <p class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+              <i class="fa-solid fa-location-dot text-emerald-600"></i> Pilihan Lokasi Cepat:
+            </p>
+            <div class="grid grid-cols-3 gap-1.5">
+              <button onclick="setDestination(-7.4533, 112.7186, 'RSUD Sidoarjo')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] py-1.5 px-2 rounded-xl font-medium border border-emerald-200 transition truncate text-center">
+                🏥 RSUD Sidoarjo
+              </button>
+              <button onclick="setDestination(-7.3820, 112.7230, 'Waru / Bungurasih')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] py-1.5 px-2 rounded-xl font-medium border border-emerald-200 transition truncate text-center">
+                🚌 Waru / Bungurasih
+              </button>
+              <button onclick="setDestination(-7.2575, 112.7521, 'Surabaya Pusat')" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] py-1.5 px-2 rounded-xl font-medium border border-emerald-200 transition truncate text-center">
+                🏙️ Surabaya Pusat
+              </button>
+            </div>
+            
+            <!-- SIMULASI CUACA -->
+            <div class="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between text-xs">
+              <span id="trafficBadge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800">
+                <i class="fa-solid fa-circle text-[6px] text-emerald-500"></i> Cerah / Jalur Lancar
+              </span>
+              <button onclick="toggleWeather()" id="weatherBtn" class="bg-amber-50 hover:bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full text-[10px] font-medium border border-amber-200 transition flex items-center gap-1">
+                <i class="fa-solid fa-cloud-rain"></i> Simulasi Hujan
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- BOTTOM PANEL: INFORMASI RUTE & ARMADA -->
+        <div class="absolute bottom-3 left-3 right-3 z-10 max-w-xl mx-auto">
+          <div class="bg-white p-3.5 rounded-2xl shadow-xl border border-gray-100">
+            <div class="flex items-center justify-between mb-2">
+              <div>
+                <div class="text-[10px] text-gray-400 font-medium">Jarak Tempuh Jalan</div>
+                <div id="distText" class="text-sm font-extrabold text-gray-800">0.0 km</div>
+              </div>
+              <div class="text-right">
+                <div class="text-[10px] text-gray-400 font-medium">Estimasi Waktu Tempuh</div>
+                <div id="etaText" class="text-sm font-extrabold text-emerald-600">0 Menit</div>
+              </div>
+            </div>
+
+            <!-- CHOICE COURIER -->
+            <div class="grid grid-cols-2 gap-2 mb-3">
+              <button id="courierBikeBtn" onclick="selectCourier('motor')" class="p-2 rounded-xl border-2 border-emerald-600 bg-emerald-50/50 flex items-center gap-2 text-left transition">
+                <i class="fa-solid fa-motorcycle text-emerald-600 text-base"></i>
+                <div>
+                  <div class="text-[11px] font-bold text-gray-800">Kurir Motor</div>
+                  <div class="text-[9px] text-gray-500">Cepat & Cerdas Selap-Selip</div>
+                </div>
+              </button>
+              <button id="courierCarBtn" onclick="selectCourier('mobil')" class="p-2 rounded-xl border border-gray-200 bg-gray-50 flex items-center gap-2 text-left transition">
+                <i class="fa-solid fa-truck-ram-box text-gray-500 text-base"></i>
+                <div>
+                  <div class="text-[11px] font-bold text-gray-800">Kurir Mobil Box</div>
+                  <div class="text-[9px] text-gray-500">Aman Terjaga Dari Hujan</div>
+                </div>
+              </button>
+            </div>
+
+            <button onclick="switchStep(3)" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl shadow flex items-center justify-center gap-2 text-xs transition">
+              <span>Lanjut Pembayaran</span>
+              <i class="fa-solid fa-credit-card"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW STEP 3: CHECKOUT & PEMBAYARAN -->
+      <div id="viewStep3" class="flex-1 overflow-y-auto p-6 pb-24 hidden">
+        <h2 class="text-base font-bold text-gray-800 mb-1">Konfirmasi & Pembayaran</h2>
+        <p class="text-xs text-gray-500 mb-4">Periksa rincian item, ongkir, dan pilih metode transaksi.</p>
+
+        <!-- RINCIAN HARGA -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 mb-4">
+          <h3 class="font-bold text-xs text-gray-700 mb-2 border-b pb-1">Item Pesanan Dapur Nusantara</h3>
+          <div id="summaryItems" class="space-y-1.5 text-xs text-gray-600">
+            <!-- Items filled by JS -->
+          </div>
+
+          <div class="border-t my-2 pt-2 space-y-1 text-xs">
+            <div class="flex justify-between text-gray-500">
+              <span>Subtotal Pesanan:</span>
+              <span id="summaryFoodSubtotal">Rp 0</span>
+            </div>
+            <div class="flex justify-between text-gray-500">
+              <span>Ongkos Kirim (Sidoarjo-Surabaya):</span>
+              <span id="summaryOngkir">Rp 0</span>
+            </div>
+            <div class="flex justify-between font-bold text-sm text-gray-900 pt-1 border-t">
+              <span>Total Tagihan:</span>
+              <span id="summaryGrandTotal" class="text-emerald-600">Rp 0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- METODE PEMBAYARAN -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200 mb-4">
+          <h3 class="font-bold text-xs text-gray-700 mb-3">Metode Pembayaran</h3>
+          <div class="space-y-2 text-xs">
+            <label class="flex items-center justify-between p-3 border rounded-xl cursor-pointer hover:bg-gray-50">
+              <div class="flex items-center gap-2">
+                <input type="radio" name="paymentMethod" value="qris" checked class="text-emerald-600 focus:ring-emerald-500">
+                <span class="font-medium">QRIS Dapur Nusantara SMAN 4</span>
+              </div>
+              <i class="fa-solid fa-qrcode text-emerald-600 text-base"></i>
+            </label>
+
+            <label class="flex items-center justify-between p-3 border rounded-xl cursor-pointer hover:bg-gray-50">
+              <div class="flex items-center gap-2">
+                <input type="radio" name="paymentMethod" value="transfer" class="text-emerald-600 focus:ring-emerald-500">
+                <span class="font-medium">Transfer Bank (BCA / Mandiri / BRI)</span>
+              </div>
+              <i class="fa-solid fa-building-columns text-gray-500 text-base"></i>
+            </label>
+
+            <label class="flex items-center justify-between p-3 border rounded-xl cursor-pointer hover:bg-gray-50">
+              <div class="flex items-center gap-2">
+                <input type="radio" name="paymentMethod" value="cod" class="text-emerald-600 focus:ring-emerald-500">
+                <span class="font-medium">COD (Bayar Tunai Saat Kiriman Tiba)</span>
+              </div>
+              <i class="fa-solid fa-hand-holding-dollar text-amber-600 text-base"></i>
+            </label>
+          </div>
+        </div>
+
+        <!-- BOX QRIS -->
+        <div class="bg-emerald-50 p-4 rounded-2xl border border-emerald-200 text-center mb-4">
+          <p class="text-xs font-bold text-emerald-800 mb-2">Scan QRIS Resmi SMAN 4 Sidoarjo</p>
+          <div class="bg-white p-3 inline-block rounded-xl shadow-md border border-emerald-100">
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=DapurNusantaraSMAN4Sidoarjo" alt="QRIS Code" class="mx-auto w-28 h-28">
+          </div>
+          <p class="text-[10px] text-emerald-600 mt-2">Dukungan pembayaran: GoPay, OVO, Dana, ShopeePay & Mobile Banking</p>
+        </div>
+
+        <button onclick="confirmOrderAndStartTracking()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl shadow-lg text-xs flex items-center justify-center gap-2 transition">
+          <i class="fa-solid fa-paper-plane"></i>
+          <span>Bayar Sekarang & Lacak Pengiriman Kurir</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- RIGHT PANEL: 4 PILAR BERPIKIR KOMPUTASIONAL (W-1/3 DISPLAYED ALWAYS) -->
+    <div class="hidden lg:flex w-1/3 flex-col h-full bg-indigo-950 text-white p-5 overflow-y-auto shrink-0 border-l border-indigo-900 shadow-2xl">
+      <div class="flex items-center justify-between pb-3 border-b border-indigo-800/80 mb-4">
+        <h2 class="font-bold text-sm flex items-center gap-2 text-indigo-200">
+          <i class="fa-solid fa-brain text-amber-400 text-base"></i>
+          4 PILAR BERPIKIR KOMPUTASIONAL
+        </h2>
+        <span class="text-[10px] bg-indigo-800 text-indigo-300 font-mono px-2 py-0.5 rounded-md">LKPD BK</span>
+      </div>
+
+      <p class="text-[11px] text-indigo-300 mb-4 leading-relaxed">
+        Sistem simulasi aplikasi ini menerapkan 4 Pilar Berpikir Komputasional secara langsung dan dinamis pada setiap tahap transaksi yang Anda lakukan.
+      </p>
+
+      <div class="space-y-3">
+        
+        <!-- PILAR 1: DEKOMPOSISI -->
+        <div id="pilar1Card" class="bg-indigo-900/60 p-3.5 rounded-2xl border border-indigo-700/60 transition hover:border-amber-400">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="w-5 h-5 rounded-full bg-amber-400 text-indigo-950 font-black text-[11px] flex items-center justify-center">1</span>
+            <h3 class="font-bold text-xs text-amber-300">Dekomposisi (Decomposition)</h3>
+          </div>
+          <p class="text-[11px] text-indigo-200 leading-relaxed" id="pilar1Text">
+            Memecah masalah sistem pengantaran makanan menjadi sub-bagian: Pemilihan Menu Makanan, Perhitungan Subtotal, Penentuan Alamat Tujuan, Kalkulasi Jarak Rute (OSRM), dan Pelacakan Kurir.
+          </p>
+        </div>
+
+        <!-- PILAR 2: PENGENALAN POLA -->
+        <div id="pilar2Card" class="bg-indigo-900/60 p-3.5 rounded-2xl border border-indigo-700/60 transition hover:border-emerald-400">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="w-5 h-5 rounded-full bg-emerald-400 text-indigo-950 font-black text-[11px] flex items-center justify-center">2</span>
+            <h3 class="font-bold text-xs text-emerald-300">Pengenalan Pola (Pattern Recognition)</h3>
+          </div>
+          <p class="text-[11px] text-indigo-200 leading-relaxed" id="pilar2Text">
+            Mengenali pola pengiriman: Hujan menurunkan kecepatan kurir hingga 40%. Ongkos kirim dipola dari rumus dasar <code class="bg-indigo-950 px-1 py-0.5 rounded text-emerald-300 font-mono text-[10px]">Rp 4.000 + (Jarak x Rp 2.000)</code>.
+          </p>
+        </div>
+
+        <!-- PILAR 3: ABSTRAKSI -->
+        <div id="pilar3Card" class="bg-indigo-900/60 p-3.5 rounded-2xl border border-indigo-700/60 transition hover:border-cyan-400">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="w-5 h-5 rounded-full bg-cyan-400 text-indigo-950 font-black text-[11px] flex items-center justify-center">3</span>
+            <h3 class="font-bold text-xs text-cyan-300">Abstraksi (Abstraction)</h3>
+          </div>
+          <p class="text-[11px] text-indigo-200 leading-relaxed" id="pilar3Text">
+            Menyederhanakan peta nyata Sidoarjo-Surabaya menjadi titik koordinat Lintang & Bujur (Latitude/Longitude) serta menampilkan indikator penting saja seperti Jarak (km) dan ETA (menit).
+          </p>
+        </div>
+
+        <!-- PILAR 4: ALGORITMA -->
+        <div id="pilar4Card" class="bg-indigo-900/60 p-3.5 rounded-2xl border border-indigo-700/60 transition hover:border-pink-400">
+          <div class="flex items-center gap-2 mb-1.5">
+            <span class="w-5 h-5 rounded-full bg-pink-400 text-indigo-950 font-black text-[11px] flex items-center justify-center">4</span>
+            <h3 class="font-bold text-xs text-pink-300">Algoritma (Algorithm)</h3>
+          </div>
+          <p class="text-[11px] text-indigo-200 leading-relaxed" id="pilar4Text">
+            Langkah sistematis: 1) Terima order &rarr; 2) Proses masak di dapur &rarr; 3) Hitung rute Dijkstra/OSRM &rarr; 4) Gerakkan marker kurir dari koordinat 0 hingga N secara berurutan.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- FOOTER LKPD AUTHOR -->
+      <div class="mt-auto pt-4 border-t border-indigo-900 text-center">
+        <p class="text-[10px] text-indigo-400">Modul Praktikum Informatika / BK SMAN 4 Sidoarjo</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODAL FLOATING KECIL UNTUK STATUS STATUS BUKAN MENUTUPI PETA -->
+  <div id="trackingModal" class="fixed bottom-4 left-4 right-4 lg:left-auto lg:right-4 lg:w-96 z-50 hidden transition-all">
+    <div class="bg-white rounded-3xl p-4 shadow-2xl border border-gray-100">
+      
+      <div class="flex items-center justify-between mb-3 border-b pb-2">
+        <div class="flex items-center gap-3">
+          <div id="statusIconBox" class="bg-amber-100 text-amber-600 p-2 rounded-2xl animate-bounce">
+            <i class="fa-solid fa-kitchen-set text-base"></i>
+          </div>
+          <div>
+            <h3 id="statusTitleText" class="font-bold text-gray-900 text-xs">Makanan Sedang Diproses Dapur</h3>
+            <p id="trackingSubtext" class="text-[10px] text-amber-600 font-medium">Koki SMAN 4 Sidoarjo sedang memasak...</p>
+          </div>
+        </div>
+        <button onclick="stopSimulation()" class="text-gray-400 hover:text-gray-600 p-1">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <!-- CARD BIODATA KURIR DETAIL -->
+      <div id="courierBioCard" class="bg-gradient-to-r from-emerald-50 to-teal-50 p-2.5 rounded-2xl mb-2.5 border border-emerald-200 shadow-sm">
+        <div class="text-[9px] font-extrabold uppercase tracking-wider text-emerald-800 mb-1.5 flex items-center justify-between">
+          <span><i class="fa-solid fa-id-card text-emerald-600"></i> Biodata Kurir Pengantar</span>
+          <span class="bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded text-[8px]">Terverifikasi</span>
+        </div>
+        
+        <div class="flex items-center gap-2.5">
+          <!-- Foto Profil Kurir -->
+          <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Pak Agus Santoso" class="w-10 h-10 rounded-full object-cover border-2 border-emerald-500 shadow-md">
+          
+          <div class="flex-1">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-bold text-gray-900">Pak Agus Santoso</h4>
+              <span class="bg-amber-100 text-amber-800 text-[9px] font-bold px-1 py-0.5 rounded flex items-center gap-0.5">
+                <i class="fa-solid fa-star text-[8px] text-amber-500"></i> 4.9
+              </span>
+            </div>
+            
+            <p id="driverVehicle" class="text-[9px] font-semibold text-emerald-800 mt-0.5">
+              W 8901 UA • Honda Vario 125
+            </p>
+          </div>
+        </div>
+
+        <!-- Tombol Kontak Kurir -->
+        <div class="flex gap-2 mt-2 pt-1.5 border-t border-emerald-200/60">
+          <button onclick="alert('Menghubungi Pak Agus Santoso... (+62 812-3456-7890)')" class="flex-1 bg-white hover:bg-emerald-100 text-emerald-800 font-bold py-1 rounded-xl text-[9px] border border-emerald-300 flex items-center justify-center gap-1 transition">
+            <i class="fa-solid fa-phone text-emerald-600"></i> Telepon
+          </button>
+          <button onclick="alert('Pesan Chat: Makanan mohon dititipkan di pos satpam jika saya belum kembali.')" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1 rounded-xl text-[9px] flex items-center justify-center gap-1 transition">
+            <i class="fa-solid fa-comment-dots"></i> Kirim Pesan
+          </button>
+        </div>
+      </div>
+
+      <!-- PROGRESS BAR -->
+      <div class="mb-2">
+        <div class="flex justify-between text-[10px] text-gray-500 mb-1 font-medium">
+          <span id="progressLabel">Status Proses:</span>
+          <span id="progressPercent" class="font-bold text-emerald-600">0%</span>
+        </div>
+        <div class="w-full bg-gray-200 h-2 rounded-full overflow-hidden">
+          <div id="progressBar" class="bg-amber-500 h-full w-0 transition-all duration-300"></div>
+        </div>
+      </div>
+
+      <!-- LOG RUNTIME STATUS -->
+      <div class="bg-gray-900 text-gray-200 p-2 rounded-xl text-[9px] font-mono h-16 overflow-y-auto mb-2 border border-gray-800 space-y-1" id="liveLog">
+        <div class="text-emerald-400">[00:00] Pembayaran Dikonfirmasi. Dapur Nusantara menerima pesanan.</div>
+      </div>
+
+      <button onclick="stopSimulation()" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-1.5 rounded-xl transition text-[11px]">
+        Tutup
+      </button>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <script>
+    // --- DATA KATALOG MENU (MAKANAN & MINUMAN PER-ES-AN) ---
+    const MAKANAN_MENU = [
+      { id: 1, name: "Nasi Ayam Geprek Sambal Korek", price: 15000, img: "https://images.unsplash.com/photo-1626082927389-6cd097cdc6ec?auto=format&fit=crop&w=300&q=80", qty: 1 },
+      { id: 2, name: "Nasi Goreng Spesial SMAN 4", price: 14000, img: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=300&q=80", qty: 0 },
+      { id: 3, name: "Mie Goreng Jawa Nusantara", price: 13000, img: "https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=300&q=80", qty: 0 },
+      { id: 4, name: "Tahu Crispy Renyah (5 pcs)", price: 8000, img: "https://images.unsplash.com/photo-1541832676-9b763b0239ab?auto=format&fit=crop&w=300&q=80", qty: 0 }
+    ];
+
+    const ES_MENU = [
+      { id: 101, name: "Es Teler BK Segar", price: 10000, img: "https://images.unsplash.com/photo-1563805042-7684c019e1cb?auto=format&fit=crop&w=300&q=80", qty: 1 },
+      { id: 102, name: "Es Krim Sundae SMAN 4", price: 8000, img: "https://images.unsplash.com/photo-1570197788417-0e82375c9371?auto=format&fit=crop&w=300&q=80", qty: 0 },
+      { id: 103, name: "Es Buah Komputasional", price: 10000, img: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=300&q=80", qty: 0 },
+      { id: 104, name: "Es Degan Murni Dapur", price: 7000, img: "https://images.unsplash.com/photo-1525385133512-2f3bdd039054?auto=format&fit=crop&w=300&q=80", qty: 0 },
+      { id: 105, name: "Es Cincau Hijau Segar", price: 6000, img: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?auto=format&fit=crop&w=300&q=80", qty: 0 }
+    ];
+
+    // --- KOORDINAT LOKASI ---
+    const BASECAMP_SMAN4 = [-7.4338, 112.7018]; // SMAN 4 Sidoarjo
+    let destCoord = [-7.4533, 112.7186]; // RSUD Sidoarjo (Default)
+    let destName = "RSUD Sidoarjo";
+
+    // --- STATE SIMULASI ---
+    let selectedCourier = 'motor';
+    let isRaining = false;
+    let distanceKm = 0;
+    let estimatedMinutes = 0;
+    let ongkir = 0;
+
+    let map, routePolyline, courierMarker, originMarker, destMarker;
+    let routeCoordinates = [];
+    let isSimulating = false;
+    let animInterval;
+
+    // --- RENDER MENU MAKANAN & ES ---
+    function renderMenus() {
+      const makananContainer = document.getElementById('makananMenuList');
+      const esContainer = document.getElementById('esMenuList');
+      
+      makananContainer.innerHTML = '';
+      esContainer.innerHTML = '';
+
+      MAKANAN_MENU.forEach(item => {
+        makananContainer.appendChild(createMenuCard(item, 'makanan'));
+      });
+
+      ES_MENU.forEach(item => {
+        esContainer.appendChild(createMenuCard(item, 'es'));
+      });
+
+      calculateCart();
+    }
+
+    function createMenuCard(item, category) {
+      const card = document.createElement('div');
+      card.className = "bg-white p-3 rounded-2xl shadow-sm border border-gray-200 flex items-center justify-between";
+      card.innerHTML = `
+        <div class="flex items-center gap-3">
+          <img src="${item.img}" alt="${item.name}" class="w-14 h-14 rounded-xl object-cover">
+          <div>
+            <h4 class="font-bold text-xs text-gray-800">${item.name}</h4>
+            <p class="text-xs font-semibold text-emerald-600 mt-0.5">Rp ${item.price.toLocaleString('id-ID')}</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 bg-gray-50 p-1 rounded-xl border border-gray-200">
+          <button onclick="updateQty(${item.id}, -1, '${category}')" class="w-6 h-6 rounded-lg bg-white shadow-sm text-gray-600 font-bold flex items-center justify-center text-xs hover:bg-gray-100">-</button>
+          <span class="text-xs font-bold w-4 text-center">${item.qty}</span>
+          <button onclick="updateQty(${item.id}, 1, '${category}')" class="w-6 h-6 rounded-lg bg-emerald-600 text-white font-bold flex items-center justify-center text-xs hover:bg-emerald-700">+</button>
+        </div>
+      `;
+      return card;
+    }
+
+    function updateQty(id, change, category) {
+      const list = category === 'makanan' ? MAKANAN_MENU : ES_MENU;
+      const item = list.find(f => f.id === id);
+      if (item) {
+        item.qty = Math.max(0, item.qty + change);
+        renderMenus();
+      }
+    }
+
+    function calculateCart() {
+      const makananTotal = MAKANAN_MENU.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      const esTotal = ES_MENU.reduce((sum, item) => sum + (item.price * item.qty), 0);
+      const total = makananTotal + esTotal;
+
+      document.getElementById('cartTotalPrice').innerText = `Rp ${total.toLocaleString('id-ID')}`;
+    }
+
+    // --- SWITCH TAB ALUR ---
+    function switchStep(stepNumber) {
+      document.getElementById('viewStep1').classList.add('hidden');
+      document.getElementById('viewStep2').classList.add('hidden');
+      document.getElementById('viewStep3').classList.add('hidden');
+
+      document.getElementById('stepBtn1').className = "py-3 px-4 flex items-center gap-2 border-b-2 border-transparent hover:text-gray-700";
+      document.getElementById('stepBtn2').className = "py-3 px-4 flex items-center gap-2 border-b-2 border-transparent hover:text-gray-700";
+      document.getElementById('stepBtn3').className = "py-3 px-4 flex items-center gap-2 border-b-2 border-transparent hover:text-gray-700";
+
+      document.getElementById(`viewStep${stepNumber}`).classList.remove('hidden');
+      document.getElementById(`stepBtn${stepNumber}`).className = "py-3 px-4 flex items-center gap-2 border-b-2 border-emerald-600 text-emerald-700 font-bold bg-emerald-50/50";
+
+      if (stepNumber === 2) {
+        if (!map) {
+          setTimeout(initMap, 150);
+        } else {
+          setTimeout(() => {
+            map.invalidateSize();
+          }, 150);
+        }
+      } else if (stepNumber === 3) {
+        renderSummary();
+      }
+    }
+
+    // --- INISIALISASI PETA JERNIH LEAFLET ---
+    function initMap() {
+      map = L.map('map', { 
+        zoomControl: false,
+        fadeAnimation: false // Mencegah efek buram animasi
+      }).setView(BASECAMP_SMAN4, 13);
+
+      // OPENSTREETMAP TILE MAP JERNIH (BEBAS WATERMARK / BLUR)
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(map);
+
+      L.control.zoom({ position: 'topright' }).addTo(map);
+
+      const originIcon = L.divIcon({
+        className: 'custom-icon origin-marker',
+        html: '<i class="fa-solid fa-utensils text-xs"></i>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+      });
+
+      const destIcon = L.divIcon({
+        className: 'custom-icon destination-marker',
+        html: '<i class="fa-solid fa-location-dot text-xs"></i>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 15]
+      });
+
+      originMarker = L.marker(BASECAMP_SMAN4, { icon: originIcon })
+        .addTo(map)
+        .bindPopup("<b>Dapur Nusantara SMAN 4 Sidoarjo</b>");
+
+      destMarker = L.marker(destCoord, { icon: destIcon, draggable: true }).addTo(map);
+
+      destMarker.on('dragend', function (e) {
+        const coord = e.target.getLatLng();
+        destCoord = [coord.lat, coord.lng];
+        destName = "Titik Lokasi Geser Peta";
+        fetchRoute();
+      });
+
+      map.on('click', function(e) {
+        if(isSimulating) return;
+        destCoord = [e.latlng.lat, e.latlng.lng];
+        destName = "Titik Pilihan Klik Peta";
+        destMarker.setLatLng(e.latlng);
+        fetchRoute();
+      });
+
+      fetchRoute();
+    }
+
+    // --- CARI ALAMAT DETAIL DENGAN NOMINATIM ---
+    async function searchAddress() {
+      const input = document.getElementById('addressSearchInput').value.trim();
+      if (!input) return;
+
+      const query = encodeURIComponent(input + ", Sidoarjo");
+      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${query}`;
+
+      try {
+        const response = await fetch(url);
+        const results = await response.json();
+
+        if (results && results.length > 0) {
+          const firstResult = results[0];
+          destCoord = [parseFloat(firstResult.lat), parseFloat(firstResult.lon)];
+          destName = firstResult.display_name.split(',')[0];
+          
+          destMarker.setLatLng(destCoord);
+          fetchRoute();
+        } else {
+          alert("Alamat tidak ditemukan. Silakan ketik nama jalan yang lebih spesifik atau klik langsung di peta.");
+        }
+      } catch (err) {
+        alert("Gagal menghubungkan ke layanan pencarian alamat.");
+      }
+    }
+
+    // --- HITUNG RUTE OSRM REAL JALAN ---
+    async function fetchRoute() {
+      const url = `https://router.project-osrm.org/route/v1/driving/${BASECAMP_SMAN4[1]},${BASECAMP_SMAN4[0]};${destCoord[1]},${destCoord[0]}?overview=full&geometries=geojson`;
+
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.routes && data.routes.length > 0) {
+          const route = data.routes[0];
+          routeCoordinates = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+
+          if (routePolyline) map.removeLayer(routePolyline);
+
+          routePolyline = L.polyline(routeCoordinates, {
+            color: isRaining ? '#EF4444' : '#059669',
+            weight: 5,
+            opacity: 0.85
+          }).addTo(map);
+
+          map.fitBounds(routePolyline.getBounds(), { padding: [50, 50] });
+
+          distanceKm = parseFloat((route.distance / 1000).toFixed(1));
+          let speedKmh = selectedCourier === 'motor' ? 35 : 25;
+          if (isRaining) speedKmh *= 0.6;
+
+          estimatedMinutes = Math.round((distanceKm / speedKmh) * 60) + 2;
+          ongkir = Math.max(6000, Math.round(distanceKm * 2000 + 4000));
+
+          document.getElementById('distText').innerText = `${distanceKm} km`;
+          document.getElementById('etaText').innerText = `${estimatedMinutes} Menit`;
+        }
+      } catch (err) {
+        console.error("Gagal mengambil rute OSRM:", err);
+      }
+    }
+
+    function setDestination(lat, lng, name) {
+      if(isSimulating) return;
+      destCoord = [lat, lng];
+      destName = name;
+      destMarker.setLatLng(destCoord);
+      fetchRoute();
+    }
+
+    function toggleWeather() {
+      isRaining = !isRaining;
+      const btn = document.getElementById('weatherBtn');
+      const badge = document.getElementById('trafficBadge');
+
+      if (isRaining) {
+        btn.className = "bg-blue-600 text-white px-2.5 py-0.5 rounded-full text-[10px] font-medium border border-blue-700 transition flex items-center gap-1 shadow";
+        btn.innerHTML = `<i class="fa-solid fa-cloud-showers-heavy"></i> Hujan Deras`;
+        
+        badge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-red-100 text-red-800";
+        badge.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-500"></i> Macet (Hujan)`;
+      } else {
+        btn.className = "bg-amber-50 hover:bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full text-[10px] font-medium border border-amber-200 transition flex items-center gap-1";
+        btn.innerHTML = `<i class="fa-solid fa-cloud-rain"></i> Simulasi Hujan`;
+
+        badge.className = "inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-medium bg-emerald-100 text-emerald-800";
+        badge.innerHTML = `<i class="fa-solid fa-circle text-[6px] text-emerald-500"></i> Cerah / Jalur Lancar`;
+      }
+
+      fetchRoute();
+    }
+
+    function selectCourier(type) {
+      selectedCourier = type;
+      const bikeBtn = document.getElementById('courierBikeBtn');
+      const carBtn = document.getElementById('courierCarBtn');
+
+      if (type === 'motor') {
+        bikeBtn.className = "p-2 rounded-xl border-2 border-emerald-600 bg-emerald-50/50 flex items-center gap-2 text-left transition";
+        carBtn.className = "p-2 rounded-xl border border-gray-200 bg-gray-50 flex items-center gap-2 text-left transition";
+        document.getElementById('driverVehicle').innerText = "W 8901 UA • Honda Vario 125";
+      } else {
+        carBtn.className = "p-2 rounded-xl border-2 border-emerald-600 bg-emerald-50/50 flex items-center gap-2 text-left transition";
+        bikeBtn.className = "p-2 rounded-xl border border-gray-200 bg-gray-50 flex items-center gap-2 text-left transition";
+        document.getElementById('driverVehicle').innerText = "W 1234 SDO • Daihatsu GranMax Box";
+      }
+
+      fetchRoute();
+    }
+
+    // --- RINGKASAN PEMBAYARAN TAHAP 3 ---
+    function renderSummary() {
+      const container = document.getElementById('summaryItems');
+      container.innerHTML = '';
+
+      const activeFood = MAKANAN_MENU.filter(f => f.qty > 0);
+      const activeEs = ES_MENU.filter(f => f.qty > 0);
+      const allActive = [...activeFood, ...activeEs];
+
+      const subtotal = allActive.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+      if (allActive.length === 0) {
+        container.innerHTML = `<div class="text-amber-600 italic">Belum ada makanan atau es yang dipilih. Silakan kembali ke Tahap 1.</div>`;
+      } else {
+        allActive.forEach(item => {
+          const row = document.createElement('div');
+          row.className = "flex justify-between";
+          row.innerHTML = `
+            <span>${item.name} x${item.qty}</span>
+            <span class="font-medium">Rp ${(item.price * item.qty).toLocaleString('id-ID')}</span>
+          `;
+          container.appendChild(row);
+        });
+      }
+
+      const grandTotal = subtotal + ongkir;
+
+      document.getElementById('summaryFoodSubtotal').innerText = `Rp ${subtotal.toLocaleString('id-ID')}`;
+      document.getElementById('summaryOngkir').innerText = `Rp ${ongkir.toLocaleString('id-ID')}`;
+      document.getElementById('summaryGrandTotal').innerText = `Rp ${grandTotal.toLocaleString('id-ID')}`;
+    }
+
+    // --- ALUR LENGKAP: PROSES MEMASAK DALAM KITCHEN -> LIVE TRACKING KURIR SANTAI ---
+    function confirmOrderAndStartTracking() {
+      const activeFood = MAKANAN_MENU.filter(f => f.qty > 0);
+      const activeEs = ES_MENU.filter(f => f.qty > 0);
+
+      if (activeFood.length === 0 && activeEs.length === 0) {
+        alert("Silakan pilih minimal 1 porsi makanan/es terlebih dahulu!");
+        switchStep(1);
+        return;
+      }
+
+      switchStep(2);
+      
+      // Memastikan peta tidak blur saat kembali ke tab peta
+      setTimeout(() => {
+        if(map) map.invalidateSize();
+      }, 200);
+
+      document.getElementById('trackingModal').classList.remove('hidden');
+      isSimulating = true;
+
+      // STAGE 1: KITCHEN PREPARATION
+      document.getElementById('statusTitleText').innerText = "Makanan & Es Sedang Diproses";
+      document.getElementById('trackingSubtext').innerText = "Koki Dapur Nusantara SMAN 4 Sidoarjo sedang memasak...";
+      document.getElementById('statusIconBox').className = "bg-amber-100 text-amber-600 p-2 rounded-2xl animate-bounce";
+      document.getElementById('statusIconBox').innerHTML = `<i class="fa-solid fa-kitchen-set text-base"></i>`;
+      document.getElementById('progressLabel').innerText = "Proses Memasak:";
+      
+      const progressBar = document.getElementById('progressBar');
+      const progressPercent = document.getElementById('progressPercent');
+      progressBar.className = "bg-amber-500 h-full w-0 transition-all duration-300";
+
+      const logBox = document.getElementById('liveLog');
+      logBox.innerHTML = `<div class="text-emerald-400">[${new Date().toLocaleTimeString()}] Pembayaran Sukses! Dapur Nusantara mulai menyiapkan pesanan.</div>`;
+
+      let prepProgress = 0;
+      const prepInterval = setInterval(() => {
+        prepProgress += 20;
+        progressBar.style.width = `${prepProgress}%`;
+        progressPercent.innerText = `${prepProgress}%`;
+
+        if (prepProgress === 60) {
+          const logItem = document.createElement('div');
+          logItem.className = "text-amber-300";
+          logItem.innerText = `[${new Date().toLocaleTimeString()}] Pesanan selesai dimasak dan dikemas rapat.`;
+          logBox.appendChild(logItem);
+          logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        if (prepProgress >= 100) {
+          clearInterval(prepInterval);
+          startCourierTracking();
+        }
+      }, 700);
+    }
+
+    // STAGE 2: COURIER TRACKING (SANTAI & REALISTIS TAMPA MENUTUPI / MEMBUAT BLUR PETA)
+    function startCourierTracking() {
+      document.getElementById('statusTitleText').innerText = "Kurir Sedang Mengantar Pesanan";
+      document.getElementById('trackingSubtext').innerText = "Menyusuri rute jalan Sidoarjo-Surabaya...";
+      document.getElementById('statusIconBox').className = "bg-emerald-100 text-emerald-600 p-2 rounded-2xl animate-pulse";
+      document.getElementById('statusIconBox').innerHTML = `<i class="fa-solid fa-truck-fast text-base"></i>`;
+      document.getElementById('progressLabel').innerText = "Perjalanan Pengantaran:";
+
+      const progressBar = document.getElementById('progressBar');
+      const progressPercent = document.getElementById('progressPercent');
+      progressBar.className = "bg-emerald-500 h-full w-0 transition-all duration-300";
+
+      const logBox = document.getElementById('liveLog');
+      const logItem = document.createElement('div');
+      logItem.className = "text-emerald-400 font-bold";
+      logItem.innerText = `[${new Date().toLocaleTimeString()}] Kurir Pak Agus mengambil pesanan & berangkat dari SMAN 4 Sidoarjo.`;
+      logBox.appendChild(logItem);
+      logBox.scrollTop = logBox.scrollHeight;
+
+      const courierIcon = L.divIcon({
+        className: 'custom-icon courier-marker',
+        html: selectedCourier === 'motor' ? '<i class="fa-solid fa-motorcycle text-xs"></i>' : '<i class="fa-solid fa-truck text-xs"></i>',
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+
+      if (courierMarker) map.removeLayer(courierMarker);
+      courierMarker = L.marker(BASECAMP_SMAN4, { icon: courierIcon }).addTo(map);
+
+      let step = 0;
+      const totalSteps = routeCoordinates.length;
+
+      // KECEPATAN SANTAI & REALISTIS
+      let speedInterval = selectedCourier === 'motor' ? 500 : 650;
+      if (isRaining) speedInterval += 350;
+
+      animInterval = setInterval(() => {
+        if (step < totalSteps) {
+          const currentPos = routeCoordinates[step];
+          courierMarker.setLatLng(currentPos);
+          
+          // Menggeser peta secara halus tanpa animasi blur berlebih
+          map.panTo(currentPos, { animate: false });
+
+          const percent = Math.round((step / (totalSteps - 1)) * 100);
+          progressBar.style.width = `${percent}%`;
+          progressPercent.innerText = `${percent}%`;
+
+          if (step === Math.floor(totalSteps / 2)) {
+            const logItemMid = document.createElement('div');
+            logItemMid.className = "text-amber-400";
+            logItemMid.innerText = `[${new Date().toLocaleTimeString()}] Kurir berada di pertengahan jalur jalan Sidoarjo.`;
+            logBox.appendChild(logItemMid);
+            logBox.scrollTop = logBox.scrollHeight;
+          }
+
+          step++;
+        } else {
+          clearInterval(animInterval);
+          const logItemEnd = document.createElement('div');
+          logItemEnd.className = "text-cyan-300 font-bold";
+          logItemEnd.innerText = `[${new Date().toLocaleTimeString()}] Pesanan TELAH SAMPAI di ${destName}! Selamat menikmati.`;
+          logBox.appendChild(logItemEnd);
+          logBox.scrollTop = logBox.scrollHeight;
+
+          document.getElementById('statusTitleText').innerText = "Pesanan Berhasil Diterima!";
+          document.getElementById('trackingSubtext').innerText = "Terima kasih telah memesan di Dapur Nusantara SMAN 4 Sidoarjo.";
+        }
+      }, speedInterval);
+    }
+
+    function stopSimulation() {
+      clearInterval(animInterval);
+      isSimulating = false;
+      document.getElementById('trackingModal').classList.add('hidden');
+      if (courierMarker) map.removeLayer(courierMarker);
+      map.setView(BASECAMP_SMAN4, 13);
+      if(map) map.invalidateSize();
+    }
+
+    window.onload = () => {
+      renderMenus();
+    };
+  </script>
+</body>
+</html>
