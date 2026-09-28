@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>ParkirKu & Simulasi Antrean Multi-Kasir</title>
+
+    <!-- Hubungkan CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="box">
+
+        <!-- =========================
+             MENU UTAMA
+        ========================= -->
+        <div id="menu-utama" class="tab-content active">
+
+            <h1>⚡ SIMULASI ALGORITMA</h1>
+
+            <p class="sub-title">
+                Pilih aplikasi simulasi yang ingin dijalankan:
+            </p>
+
+            <div class="menu-grid">
+
+                <button
+                    class="btn-menu"
+                    onclick="switchTab('kasir')">
+                    🛒 1. SIMULASI ANTREAN KASIR MULTI-QUEUE
+                </button>
+
+                <button
+                    class="btn-menu"
+                    onclick="switchTab('parkir')">
+                    🅿️ 2. TARIF PARKIR (PARKIRKU)
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             STUDI KASUS 1:
+             ANTREAN KASIR
+        ========================= -->
+        <div id="kasir-app" class="tab-content">
+
+            <h2 style="text-align: center; color: #1769e0; margin-top: 0;">
+                🛒 ANTREAN KASIR
+            </h2>
+
+
+            <!-- STEP 1 -->
+            <div class="card-step">
+
+                <h3>1. AMBIL NOMOR ANTREAN</h3>
+
+                <p>
+                    Pilih kategori antrean sesuai kebutuhan pelanggan:
+                </p>
+
+                <div style="display: flex; gap: 10px;">
+
+                    <button
+                        onclick="ambilNomorAntrean('Reguler')">
+                        🟦 REGULER
+                    </button>
+
+                    <button
+                        class="btn-prio"
+                        onclick="ambilNomorAntrean('Prioritas')">
+                        🟥 PRIORITAS
+                    </button>
+
+                </div>
+
+                <div class="badge-last">
+                    Nomor terakhir:
+                    <span id="sNomorTerakhir">-</span>
+                </div>
+
+
+                <!-- ESTIMASI WAKTU -->
+                <div
+                    id="boxEstimasi"
+                    class="estimation-box hidden">
+
+                    🎟️ Ticket:
+                    <b id="sTiketSaya">-</b>
+
+                    <br>
+
+                    ⏱️ Est. Waktu Tunggu:
+                    <b id="sEstWaktu">0</b> menit
+
+                    <br>
+
+                    👥 Antrean di Depan:
+                    <b id="sAntreanDepan">0</b> orang
+
+                </div>
+
+            </div>
+
+
+            <!-- STEP 2 -->
+            <div class="card-step">
+
+                <h3>2. DAFTAR ANTREAN BERJALAN</h3>
+
+                <div
+                    id="boxDaftarAntrean"
+                    class="queue-tags">
+
+                    <span
+                        style="
+                            color: #94a3b8;
+                            font-size: 13px;
+                            font-style: italic;
+                        ">
+                        Belum ada antrean.
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- STEP 3 & 4 -->
+            <div class="card-step">
+
+                <h3>3. PEMANGGILAN KASIR</h3>
+
+                <div class="kasir-grid">
+
+
+                    <!-- KASIR 1 -->
+                    <div class="kasir-box">
+
+                        <h4>🔴 KASIR 1 (PRIORITAS)</h4>
+
+                        <div class="display-serving-mini">
+
+                            <div
+                                class="serving-number-mini serving-number-priority"
+                                id="sKasir1">
+                                -
+                            </div>
+
+                        </div>
+
+                        <button
+                            class="btn-prio"
+                            style="
+                                font-size: 12px;
+                                padding: 8px;
+                            "
+                            onclick="panggilKasir(1)">
+                            📣 PANGGIL
+                        </button>
+
+                    </div>
+
+
+                    <!-- KASIR 2 -->
+                    <div class="kasir-box">
+
+                        <h4>🔵 KASIR 2 (REGULER)</h4>
+
+                        <div class="display-serving-mini">
+
+                            <div
+                                class="serving-number-mini"
+                                id="sKasir2">
+                                -
+                            </div>
+
+                        </div>
+
+                        <button
+                            style="
+                                font-size: 12px;
+                                padding: 8px;
+                            "
+                            onclick="panggilKasir(2)">
+                            📣 PANGGIL
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- KEMBALI -->
+            <button
+                class="btn-back"
+                onclick="switchTab('menu')">
+                ← KEMBALI KE MENU UTAMA
+            </button>
+
+        </div>
+
+
+        <!-- =========================
+             STUDI KASUS 2:
+             PARKIRKU
+        ========================= -->
+        <div id="parkir-app" class="tab-content">
+
+            <h1>🅿️ ParkirKu</h1>
+
+            <p
+                class="tanggal"
+                id="tanggal">
+            </p>
+
+
+            <!-- FORM TRANSAKSI -->
+            <div class="form">
+
+
+                <!-- JENIS KENDARAAN -->
+                <label>
+                    Jenis Kendaraan
+                </label>
+
+                <select id="kendaraan">
+
+                    <option value="">
+                        -- Pilih Kendaraan --
+                    </option>
+
+                    <option value="Mobil">
+                        🚗 Mobil
+                    </option>
+
+                    <option value="Motor">
+                        🏍️ Motor
+                    </option>
+
+                </select>
+
+
+                <!-- NOMOR KENDARAAN -->
+                <label>
+                    Nomor Kendaraan
+                </label>
+
+                <input
+                    type="text"
+                    id="nomorKendaraan"
+                    placeholder="Contoh: L 1234 AB"
+                    style="text-transform: uppercase;"
+                >
+
+
+                <!-- JAM MASUK -->
+                <label>
+                    Jam Masuk
+                </label>
+
+                <input
+                    type="time"
+                    id="masuk"
+                >
+
+
+                <!-- JAM KELUAR -->
+                <label>
+                    Jam Keluar
+                </label>
+
+                <input
+                    type="time"
+                    id="keluar"
+                >
+
+
+                <!-- HITUNG TARIF -->
+                <button onclick="hitung()">
+                    💰 HITUNG TARIF
+                </button>
+
+
+                <!-- HASIL -->
+                <div
+                    id="hasil"
+                    class="hasil hidden">
+
+                    <b>Durasi:</b>
+                    <span id="durasi"></span>
+
+                    <br>
+                    <br>
+
+                    <b>Total Bayar:</b>
+                    <span id="total"></span>
+
+
+                    <!-- METODE PEMBAYARAN -->
+                    <label>
+                        Metode Pembayaran
+                    </label>
+
+                    <select
+                        id="metode"
+                        onchange="cekTunai()">
+
+                        <option value="">
+                            -- Pilih Pembayaran --
+                        </option>
+
+                        <option value="Tunai">
+                            💵 Tunai
+                        </option>
+
+                        <option value="QRIS">
+                            📱 QRIS
+                        </option>
+
+                        <option value="Debit">
+                            💳 Debit
+                        </option>
+
+                    </select>
+
+
+                    <!-- PEMBAYARAN TUNAI -->
+                    <div
+                        id="tunai"
+                        class="hidden">
+
+                        <label>
+                            Uang Diterima
+                        </label>
+
+                        <input
+                            type="number"
+                            id="uang"
+                            placeholder="Contoh: 20000"
+                            oninput="kembalian()"
+                        >
+
+                        <div class="kembalian">
+
+                            Kembalian:
+                            <b id="kembali">
+                                Rp0
+                            </b>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- BAYAR -->
+                    <button onclick="bayar()">
+                        ✅ BAYAR
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- =========================
+                 STRUK
+            ========================= -->
+            <div
+                id="struk"
+                class="struk hidden">
+
+                <div class="struk-header">
+
+                    <h2>PARKIRKU</h2>
+
+                    <p>
+                        PARKIR KENDARAAN
+                    </p>
+
+                    <p class="nomor-transaksi">
+
+                        No. Transaksi:
+
+                        <b id="sTransaksi"></b>
+
+                    </p>
+
+                </div>
+
+
+                <div class="garis"></div>
+
+
+                <div class="baris">
+
+                    <span>
+                        Tanggal
+                    </span>
+
+                    <span id="sTanggal"></span>
+
+                </div>
+
+
+                <div class="baris">
+
+                    <span>
+                        Waktu
+                    </span>
+
+                    <span id="sWaktu"></span>
+
+                </div>
+
+
+                <div class="garis"></div>
+
+
+                <div class="baris">
+
+                    <span>
+                        Kendaraan
+                    </span>
+
+                    <span id="sKendaraan"></span>
+
+                </div>
+
+
+                <div class="baris">
+
+                    <span>
+                        No. Polisi
+                    </span>
+
+                    <span id="sNomor"></span>
+
+                </div>
+
+
+                <div class="baris">
+
+                    <span>
+                        Jam Masuk
+                    </span>
+
+                    <span id="sMasuk"></span>
+
+                </div>
+
+
+                <div class="baris">
+
+                    <span>
+                        Jam Keluar
+                    </span>
+
+                    <span id="sKeluar"></span>
+
+                </div>
+
+
+                <div class="baris">
+
+                    <span>
+                        Durasi
+                    </span>
+
+                    <span id="sDurasi"></span>
+
+                </div>
+
+
+                <div class="garis"></div>
+
+
+                <div class="baris">
+
+                    <span>
+                        Metode
+                    </span>
+
+                    <span id="sMetode"></span>
+
+                </div>
+
+
+                <div class="baris total">
+
+                    <span>
+                        TOTAL
+                    </span>
+
+                    <span id="sTotal"></span>
+
+                </div>
+
+
+                <!-- KHUSUS TUNAI -->
+                <div
+                    id="strukTunai"
+                    class="hidden">
+
+                    <div class="baris">
+
+                        <span>
+                            Uang
+                        </span>
+
+                        <span id="sUang"></span>
+
+                    </div>
+
+                    <div class="baris">
+
+                        <span>
+                            Kembalian
+                        </span>
+
+                        <span id="sKembalian"></span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="garis"></div>
+
+
+                <div class="terima">
+
+                    <b>
+                        TERIMA KASIH
+                    </b>
+
+                    <p>
+                        Simpan struk ini sebagai bukti pembayaran.
+                    </p>
+
+                    <p>
+                        Selamat berkendara 🙏
+                    </p>
+
+                </div>
+
+
+                <!-- TOMBOL STRUK -->
+                <div class="tombol-struk">
+
+                    <button
+                        class="btn-cetak"
+                        onclick="cetakStruk()">
+                        🖨️ CETAK STRUK
+                    </button>
+
+                    <button
+                        class="btn-baru"
+                        onclick="baru()">
+                        🔄 TRANSAKSI SELANJUTNYA
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- KEMBALI KE MENU -->
+            <button
+                class="btn-back"
+                onclick="switchTab('menu')">
+                ← KEMBALI KE MENU UTAMA
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- Hubungkan JavaScript -->
+    <script src="script.js"></script>
+
+</body>
+
+</html>
